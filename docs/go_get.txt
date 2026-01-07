@@ -1,0 +1,15 @@
+go get -u go.uber.org/zap (Log)
+
+go get github.com/gin-contrib/cors (CORS)
+
+go get -u github.com/gin-gonic/gin (HTTP framework)
+
+go get -u gorm.io/driver/postgres (DB driver)
+
+go get -u gorm.io/gorm (ORM)
+
+go get github.com/spf13/viper (Load config)
+
+go get gopkg.in/natefinch/lumberjack.v2 (File rotation)
+
+go get github.com/minio/minio-go/v7 (File storage)

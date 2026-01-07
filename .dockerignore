@@ -6,3 +6,5 @@ Makefile
 logs
 README.md
 .env*
+docs
+configs

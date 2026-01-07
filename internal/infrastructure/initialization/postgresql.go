@@ -31,7 +31,7 @@ func InitPostgreSQL(cfg *config.Config) (*DB, error) {
 	)
 
 	newLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags),
+		log.New(os.Stdout, "[DB] ", log.LstdFlags),
 		logger.Config{
 			SlowThreshold:             time.Second,
 			LogLevel:                  logger.Warn,

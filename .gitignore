@@ -2,3 +2,4 @@ config.yml
 app.log
 tmp
 .env*
+internal_codes.json

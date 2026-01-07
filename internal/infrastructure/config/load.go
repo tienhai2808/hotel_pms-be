@@ -25,6 +25,22 @@ func LoadConfig() (*Config, error) {
 	viper.BindEnv("postgresql.ssl_mode", "PG_SSL_MODE")
 	viper.BindEnv("postgresql.db_name", "PG_DB_NAME")
 
+	viper.BindEnv("log.level", "LOG_LEVEL")
+	viper.BindEnv("log.encoding", "LOG_ENCODING")
+	viper.BindEnv("log.output_path", "LOG_OUTPUT_PATH")
+	viper.BindEnv("log.max_size", "LOG_MAX_SIZE")
+	viper.BindEnv("log.max_backups", "LOG_MAX_BACKUPS")
+	viper.BindEnv("log.max_age", "LOG_MAX_AGE")
+	viper.BindEnv("log.compress", "LOG_COMPRESS")
+
+	viper.BindEnv("minio.endpoint", "MIN_ENDPOINT")
+	viper.BindEnv("minio.access_key_id", "MIN_ACCESS_KEY_ID")
+	viper.BindEnv("minio.secret_access_key", "MIN_SECRET_ACCESS_KEY")
+	viper.BindEnv("minio.bucket", "MIN_BUCKET")
+	viper.BindEnv("minio.region", "MIN_REGION")
+	viper.BindEnv("minio.public_read", "MIN_PUBLIC_READ")
+	viper.BindEnv("minio.use_ssl", "MIN_USE_SSL")
+
 	viper.AddConfigPath("./configs")
 	viper.SetConfigName("config")
 	viper.SetConfigType("yml")

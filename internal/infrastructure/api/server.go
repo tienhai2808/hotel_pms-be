@@ -9,21 +9,36 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/InstayPMS/backend/internal/di"
 	"github.com/InstayPMS/backend/internal/infrastructure/api/http/router"
 	"github.com/InstayPMS/backend/internal/infrastructure/config"
 	"github.com/InstayPMS/backend/internal/infrastructure/initialization"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/minio/minio-go/v7"
+	"go.uber.org/zap"
 )
 
 type Server struct {
 	cfg  *config.Config
 	http *http.Server
 	db   *initialization.DB
+	stor *minio.Client
+	log  *zap.Logger
 }
 
 func NewServer(cfg *config.Config) (*Server, error) {
 	db, err := initialization.InitPostgreSQL(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	stor, err := initialization.InitMinIO(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	log, err := initialization.InitZap(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -46,8 +61,10 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		cors.New(corsConfig),
 	)
 
+	ctn := di.NewContainer(stor)
+
 	api := router.NewRouter(r)
-	api.Setup(cfg.Server.APIPrefix)
+	api.Setup(cfg.Server.APIPrefix, ctn)
 
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
 
@@ -64,6 +81,8 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		cfg,
 		http,
 		db,
+		stor,
+		log,
 	}, nil
 }
 

@@ -18,6 +18,16 @@ type Config struct {
 		MaxAge           time.Duration `mapstructure:"max_age"`
 	} `mapstructure:"server"`
 
+	Log struct {
+		Level      string `mapstructure:"level"`
+		Encoding   string `mapstructure:"encoding"`
+		OutputPath string `mapstructure:"output_path"`
+		MaxSize    int    `mapstructure:"max_size"`
+		MaxBackups int    `mapstructure:"max_backups"`
+		MaxAge     int    `mapstructure:"max_age"`
+		Compress   bool   `mapstructure:"compress"`
+	} `mapstructure:"log"`
+
 	PostgreSQL struct {
 		Host     string `mapstructure:"host"`
 		Port     int    `mapstructure:"port"`
@@ -26,4 +36,14 @@ type Config struct {
 		SSLMode  string `mapstructure:"ssl_mode"`
 		DBName   string `mapstructure:"db_name"`
 	} `mapstructure:"postgresql"`
+
+	MinIO struct {
+		Endpoint        string `mapstructure:"endpoint"`
+		AccessKeyID     string `mapstructure:"access_key_id"`
+		SecretAccessKey string `mapstructure:"secret_access_key"`
+		Region          string `mapstructure:"region"`
+		Bucket          string `mapstructure:"bucket"`
+		PublicRead      bool   `mapstructure:"public_read"`
+		UseSSL          bool   `mapstructure:"use_ssl"`
+	} `mapstructure:"minio"`
 }
