@@ -7,6 +7,7 @@ import (
 	"runtime/debug"
 
 	"github.com/InstayPMS/backend/internal/application/dto"
+	"github.com/InstayPMS/backend/pkg/constants"
 	"github.com/InstayPMS/backend/pkg/errors"
 	"github.com/InstayPMS/backend/pkg/utils"
 	"github.com/gin-gonic/gin"
@@ -42,8 +43,8 @@ func (m *ContextMiddleware) Recovery() gin.HandlerFunc {
 		)
 
 		c.AbortWithStatusJSON(http.StatusInternalServerError, dto.APIResponse{
-			Code:    9000,
-			Slug:    "INTERNAL_SERVER_ERROR",
+			Code:    constants.CodeInternalError,
+			Slug:    constants.SlugInternalError,
 			Message: "internal server error",
 		})
 	})

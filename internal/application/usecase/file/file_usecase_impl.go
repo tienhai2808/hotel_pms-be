@@ -33,7 +33,7 @@ func NewFileUseCase(
 	}
 }
 
-func (s *fileUseCaseImpl) CreateUploadURLs(ctx context.Context, req dto.UploadPresignedURLsRequest) ([]*dto.UploadPresignedURLResponse, error) {
+func (u *fileUseCaseImpl) CreateUploadURLs(ctx context.Context, req dto.UploadPresignedURLsRequest) ([]*dto.UploadPresignedURLResponse, error) {
 	result := make([]*dto.UploadPresignedURLResponse, 0, len(req.Files))
 
 	for _, file := range req.Files {
@@ -43,9 +43,9 @@ func (s *fileUseCaseImpl) CreateUploadURLs(ctx context.Context, req dto.UploadPr
 		key := fmt.Sprintf("%s-%s%s", uuid.NewString(), utils.GenerateSlug(name), ext)
 		expiresIn := 15 * time.Minute
 
-		presignedURL, err := s.stor.PresignedPutObject(ctx, s.cfg.MinIO.Bucket, key, expiresIn)
+		presignedURL, err := u.stor.PresignedPutObject(ctx, u.cfg.MinIO.Bucket, key, expiresIn)
 		if err != nil {
-			s.log.Error("generate upload presigned URL failed", zap.String("content_type", file.ContentType), zap.Error(err))
+			u.log.Error("generate upload presigned URL failed", zap.String("content_type", file.ContentType), zap.Error(err))
 			return nil, err
 		}
 
@@ -58,24 +58,24 @@ func (s *fileUseCaseImpl) CreateUploadURLs(ctx context.Context, req dto.UploadPr
 	return result, nil
 }
 
-func (s *fileUseCaseImpl) CreateViewURLs(ctx context.Context, req dto.ViewPresignedURLsRequest) ([]*dto.ViewPresignedURLResponse, error) {
+func (u *fileUseCaseImpl) CreateViewURLs(ctx context.Context, req dto.ViewPresignedURLsRequest) ([]*dto.ViewPresignedURLResponse, error) {
 	result := make([]*dto.ViewPresignedURLResponse, 0, len(req.Keys))
 
 	for _, key := range req.Keys {
-		if _, err := s.stor.StatObject(ctx, s.cfg.MinIO.Bucket, key, minio.StatObjectOptions{}); err != nil {
+		if _, err := u.stor.StatObject(ctx, u.cfg.MinIO.Bucket, key, minio.StatObjectOptions{}); err != nil {
 			errResponse := minio.ToErrorResponse(err)
 			if errResponse.Code == "NoSuchKey" {
 				result = append(result, nil)
 				continue
 			}
-			s.log.Error("file check failed", zap.Error(err))
+			u.log.Error("file check failed", zap.Error(err))
 			return nil, err
 		}
 
 		expiresIn := 15 * time.Minute
-		presignedURL, err := s.stor.PresignedGetObject(ctx, s.cfg.MinIO.Bucket, key, expiresIn, nil)
+		presignedURL, err := u.stor.PresignedGetObject(ctx, u.cfg.MinIO.Bucket, key, expiresIn, nil)
 		if err != nil {
-			s.log.Error("generate view presigned URL failed", zap.Error(err))
+			u.log.Error("generate view presigned URL failed", zap.Error(err))
 			return nil, err
 		}
 

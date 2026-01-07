@@ -3,7 +3,7 @@ package router
 import (
 	"net/http"
 
-	"github.com/InstayPMS/backend/internal/di"
+	"github.com/InstayPMS/backend/internal/container"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,12 +17,13 @@ func NewRouter(r *gin.Engine) *Router {
 	}
 }
 
-func (r *Router) Setup(apiPrefix string, ctn *di.Container) {
+func (r *Router) Setup(apiPrefix string, ctn *container.Container) {
 	v2 := r.Engine.Group(apiPrefix)
 
 	v2.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "pong")
 	})
 
-	r.setupFileRoutes(v2, ctn.FileHandler)
+	r.setupFileRoutes(v2, ctn.FileHdl)
+	r.setupAuthRoutes(v2, ctn.AuthHdl)
 }

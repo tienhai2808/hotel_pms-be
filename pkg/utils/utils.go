@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/InstayPMS/backend/internal/application/dto"
+	"github.com/InstayPMS/backend/pkg/constants"
 	"github.com/gin-gonic/gin"
 	"github.com/gosimple/slug"
 )
@@ -18,7 +19,13 @@ func APIResponse(c *gin.Context, status, code int, slug, message string, data an
 }
 
 func ISEResponse(c *gin.Context) {
-	APIResponse(c, http.StatusInternalServerError, 9000, "INTERNAL_SERVER_ERROR", "Internal server error", nil)
+	APIResponse(
+		c, http.StatusInternalServerError,
+		constants.CodeInternalError,
+		constants.SlugInternalError,
+		"Internal server error",
+		nil,
+	)
 }
 
 func GenerateSlug(str string) string {

@@ -37,6 +37,13 @@ type Config struct {
 		DBName   string `mapstructure:"db_name"`
 	} `mapstructure:"postgresql"`
 
+	Redis struct {
+		Host     string `mapstructure:"host"`
+		Port     int    `mapstructure:"port"`
+		Password string `mapstructure:"password"`
+		UseSSL   bool   `mapstructure:"use_ssl"`
+	} `mapstructure:"redis"`
+
 	MinIO struct {
 		Endpoint        string `mapstructure:"endpoint"`
 		AccessKeyID     string `mapstructure:"access_key_id"`

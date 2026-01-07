@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/InstayPMS/backend/internal/di"
+	"github.com/InstayPMS/backend/internal/container"
 	"github.com/InstayPMS/backend/internal/infrastructure/api/http/router"
 	"github.com/InstayPMS/backend/internal/infrastructure/config"
 	"github.com/gin-contrib/cors"
@@ -19,11 +19,11 @@ import (
 type Server struct {
 	cfg  *config.Config
 	http *http.Server
-	ctn  *di.Container
+	ctn  *container.Container
 }
 
 func NewServer(cfg *config.Config) (*Server, error) {
-	ctn, err := di.NewContainer(cfg)
+	ctn, err := container.NewContainer(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -44,8 +44,8 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		gin.Logger(),
 		gin.Recovery(),
 		cors.New(corsConfig),
-		ctn.ContextMiddleware.ErrorHandler(),
-		ctn.ContextMiddleware.Recovery(),
+		ctn.CtxMid.ErrorHandler(),
+		ctn.CtxMid.Recovery(),
 	)
 
 	api := router.NewRouter(r)

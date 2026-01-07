@@ -1,4 +1,4 @@
-package di
+package container
 
 import (
 	"github.com/InstayPMS/backend/internal/infrastructure/api/http/middleware"
@@ -17,16 +17,28 @@ func (c *Container) initInfrastructure(cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	c.Database = db
+	c.DB = db
+
+	rdb, err := initialization.InitRedis(cfg)
+	if err != nil {
+		return err
+	}
+	c.Cache = rdb
 
 	stor, err := initialization.InitMinIO(cfg)
 	if err != nil {
 		return err
 	}
-	c.Storage = stor
+	c.Stor = stor
+
+	idGen, err := initialization.InitSnowFlake()
+	if err != nil {
+		return err
+	}
+	c.IDGen = idGen
 
 	ctxMid := middleware.NewContextMiddleware(log)
-	c.ContextMiddleware = ctxMid
+	c.CtxMid = ctxMid
 
 	return nil
 }
