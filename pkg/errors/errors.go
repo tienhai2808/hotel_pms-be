@@ -10,34 +10,43 @@ var (
 	ErrLoginFailed = NewAPIError(
 		http.StatusBadRequest,
 		constants.CodeLoginFailed,
-		constants.SlugLoginFailed,
 		"Incorrect username or password",
 	)
 
 	ErrInvalidToken = NewAPIError(
 		http.StatusBadRequest,
 		constants.CodeInvalidToken,
-		constants.SlugInvalidToken,
 		"Invalid or expired token",
+	)
+
+	ErrBadRequest = NewAPIError(
+		http.StatusBadRequest,
+		constants.CodeBadRequest,
+		"Invalid data",
 	)
 )
 
 type APIError struct {
 	Status  int
 	Code    int
-	Slug    string
 	Message string
+	Data    any
 }
 
-func NewAPIError(status, code int, slug, message string) *APIError {
+func NewAPIError(status, code int, message string) *APIError {
 	return &APIError{
 		status,
 		code,
-		slug,
 		message,
+		nil,
 	}
 }
 
 func (e *APIError) Error() string {
 	return e.Message
+}
+
+func (e *APIError) WithData(data any) *APIError {
+	e.Data = data
+	return e
 }

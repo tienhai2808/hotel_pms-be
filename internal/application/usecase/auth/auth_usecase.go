@@ -8,5 +8,5 @@ import (
 )
 
 type AuthUseCase interface {
-	Login(ctx context.Context, req dto.LoginRequest, userAgent, clientIP string) (*model.User, string, string, error)
+	Login(ctx context.Context, ua string, req dto.LoginRequest) (*model.User, string, string, error)
 }

@@ -47,7 +47,7 @@ func NewAuthUseCase(
 	}
 }
 
-func (u *authUseCaseImpl) Login(ctx context.Context, req dto.LoginRequest, userAgent, clientIP string) (*model.User, string, string, error) {
+func (u *authUseCaseImpl) Login(ctx context.Context, ua string, req dto.LoginRequest) (*model.User, string, string, error) {
 	user, err := u.userRepo.FindByUsernameWithOutletAndDepartment(ctx, req.Username)
 	if err != nil {
 		u.log.Error("find user by username failed", zap.String("username", req.Username), zap.Error(err))
@@ -66,15 +66,15 @@ func (u *authUseCaseImpl) Login(ctx context.Context, req dto.LoginRequest, userA
 		return nil, "", "", errors.ErrLoginFailed
 	}
 
-	tokenVersionKey := fmt.Sprintf("user_version:%s", strconv.Itoa(int(user.ID)))
-	tokenVersion, err := u.cachePro.GetInt(ctx, tokenVersionKey)
+	redisKey := fmt.Sprintf("user_version:%s", strconv.Itoa(int(user.ID)))
+	tokenVersion, err := u.cachePro.GetInt(ctx, redisKey)
 	if err != nil {
 		u.log.Error("get token version failed", zap.Error(err))
 		return nil, "", "", err
 	}
 
 	if tokenVersion == 0 {
-		if err = u.cachePro.SetInt(ctx, tokenVersionKey, 1, 0); err != nil {
+		if err = u.cachePro.SetInt(ctx, redisKey, 1, 0); err != nil {
 			u.log.Error("save token version failed", zap.Error(err))
 			return nil, "", "", err
 		}
@@ -103,20 +103,13 @@ func (u *authUseCaseImpl) Login(ctx context.Context, req dto.LoginRequest, userA
 		ID:        id,
 		UserID:    user.ID,
 		Token:     hashedToken,
-		UserAgent: utils.ConvertUserAgent(userAgent),
-		IPAddress: clientIP,
+		UserAgent: utils.ConvertUserAgent(ua),
 		RevokedAt: nil,
 		ExpiresAt: time.Now().Add(u.cfg.RefreshExpiresIn),
 	}
 
 	if err := u.tokenRepo.Create(ctx, token); err != nil {
 		u.log.Error("save token to database failed", zap.Error(err))
-		return nil, "", "", err
-	}
-
-	refreshTokenKey := fmt.Sprintf("refresh_token:%s", hashedToken)
-	if err := u.cachePro.SetInt(ctx, refreshTokenKey, int(user.ID), u.cfg.RefreshExpiresIn); err != nil {
-		u.log.Error("save token to cache failed", zap.Error(err))
 		return nil, "", "", err
 	}
 

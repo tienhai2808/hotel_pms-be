@@ -17,35 +17,24 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func APIResponse(c *gin.Context, status, code int, slug, message string, data any) {
+func APIResponse(c *gin.Context, status, code int, message string, data any) {
 	c.JSON(status, dto.APIResponse{
 		Code:    code,
-		Slug:    slug,
 		Message: message,
 		Data:    data,
 	})
 }
 
 func ISEResponse(c *gin.Context) {
-	APIResponse(
-		c,
-		http.StatusInternalServerError,
-		constants.CodeInternalError,
-		constants.SlugInternalError,
-		"Internal server error",
-		nil,
-	)
+	APIResponse(c, http.StatusInternalServerError, constants.CodeInternalError, "Internal server error", nil)
 }
 
-func BadRequestResponse(c *gin.Context, message string) {
-	APIResponse(
-		c,
-		http.StatusBadRequest,
-		constants.CodeBadRequest,
-		constants.SlugBadRequest,
-		message,
-		nil,
-	)
+func BadRequestResponse(c *gin.Context) {
+	APIResponse(c, http.StatusBadRequest, constants.CodeBadRequest, "Invalid data", nil)
+}
+
+func OKResponse(c *gin.Context, data any) {
+	APIResponse(c, http.StatusOK, constants.CodeSuccess, "Operation successful", data)
 }
 
 func GenerateSlug(str string) string {
@@ -91,6 +80,10 @@ func ConvertUserAgent(uaReq string) string {
 	ua := useragent.New(uaReq)
 	browser, _ := ua.Browser()
 	os := ua.OS()
+
+	if os == "" {
+		os = "my computer"
+	}
 
 	return fmt.Sprintf("%s on %s", browser, os)
 }

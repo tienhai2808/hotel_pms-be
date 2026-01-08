@@ -8,7 +8,6 @@ import (
 
 type APIResponse struct {
 	Code    int    `json:"code"`
-	Slug    string `json:"slug"`
 	Message string `json:"message"`
 	Data    any    `json:"data,omitempty"`
 }

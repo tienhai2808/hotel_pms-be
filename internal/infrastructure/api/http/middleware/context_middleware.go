@@ -44,7 +44,6 @@ func (m *ContextMiddleware) Recovery() gin.HandlerFunc {
 
 		c.AbortWithStatusJSON(http.StatusInternalServerError, dto.APIResponse{
 			Code:    constants.CodeInternalError,
-			Slug:    constants.SlugInternalError,
 			Message: "internal server error",
 		})
 	})
@@ -60,7 +59,7 @@ func (m *ContextMiddleware) ErrorHandler() gin.HandlerFunc {
 		}
 
 		if apiErr, ok := err.Err.(*errors.APIError); ok {
-			utils.APIResponse(c, apiErr.Status, apiErr.Code, apiErr.Slug, apiErr.Message, nil)
+			utils.APIResponse(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Data)
 			return
 		}
 

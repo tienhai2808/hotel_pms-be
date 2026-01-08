@@ -10,6 +10,7 @@ import (
 	authUC "github.com/InstayPMS/backend/internal/application/usecase/auth"
 	"github.com/InstayPMS/backend/internal/infrastructure/config"
 	"github.com/InstayPMS/backend/pkg/constants"
+	"github.com/InstayPMS/backend/pkg/errors"
 	"github.com/InstayPMS/backend/pkg/mapper"
 	"github.com/InstayPMS/backend/pkg/utils"
 	"github.com/InstayPMS/backend/pkg/validator"
@@ -37,12 +38,16 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		mess := validator.HandleRequestError(err)
-		utils.BadRequestResponse(c, mess)
+		field, tag, param := validator.HandleRequestError(err)
+		c.Error(errors.ErrBadRequest.WithData(gin.H{
+			"field": field,
+			"tag":   tag,
+			"param": param,
+		}))
 		return
 	}
 
-	user, accessToken, refreshToken, err := h.authUC.Login(ctx, req, c.Request.UserAgent(), c.ClientIP())
+	user, accessToken, refreshToken, err := h.authUC.Login(ctx, c.Request.UserAgent(), req)
 	if err != nil {
 		c.Error(err)
 		return
@@ -55,14 +60,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.SetCookie(h.cfg.JWT.AccessName, accessToken, int(h.cfg.JWT.AccessExpiresIn.Seconds()), "/", domain, isSecure, true)
 	c.SetCookie(h.cfg.JWT.RefreshName, refreshToken, int(h.cfg.JWT.RefreshExpiresIn.Seconds()), fmt.Sprintf("%s/auth/refresh-token", h.cfg.Server.APIPrefix), domain, isSecure, true)
 
-	utils.APIResponse(
-		c,
-		http.StatusOK,
-		constants.CodeLoginSuccess,
-		constants.SlugLoginSuccess,
-		"Login successfully",
-		gin.H{
-			"user": mapper.ToUserResponse(user),
-		},
-	)
+	utils.APIResponse(c, http.StatusOK, constants.CodeLoginSuccess, "Login successfully", gin.H{
+		"user": mapper.ToUserResponse(user),
+	})
 }

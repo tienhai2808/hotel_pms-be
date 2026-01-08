@@ -2,12 +2,11 @@ package handler
 
 import (
 	"context"
-	"net/http"
 	"time"
 
 	"github.com/InstayPMS/backend/internal/application/dto"
 	fileUC "github.com/InstayPMS/backend/internal/application/usecase/file"
-	"github.com/InstayPMS/backend/pkg/constants"
+	"github.com/InstayPMS/backend/pkg/errors"
 	"github.com/InstayPMS/backend/pkg/utils"
 	"github.com/InstayPMS/backend/pkg/validator"
 	"github.com/gin-gonic/gin"
@@ -27,8 +26,12 @@ func (h *FileHandler) UploadPresignedURLs(c *gin.Context) {
 
 	var req dto.UploadPresignedURLsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		mess := validator.HandleRequestError(err)
-		utils.BadRequestResponse(c, mess)
+		field, tag, param := validator.HandleRequestError(err)
+		c.Error(errors.ErrBadRequest.WithData(gin.H{
+			"field": field,
+			"tag":   tag,
+			"param": param,
+		}))
 		return
 	}
 
@@ -38,16 +41,9 @@ func (h *FileHandler) UploadPresignedURLs(c *gin.Context) {
 		return
 	}
 
-	utils.APIResponse(
-		c,
-		http.StatusOK,
-		constants.CodeSuccess,
-		constants.SlugSuccess,
-		"Generate upload presigned urls successfully",
-		gin.H{
-			"presigned_urls": presignedURLs,
-		},
-	)
+	utils.OKResponse(c, gin.H{
+		"presigned_urls": presignedURLs,
+	})
 }
 
 func (h *FileHandler) ViewPresignedURLs(c *gin.Context) {
@@ -56,8 +52,12 @@ func (h *FileHandler) ViewPresignedURLs(c *gin.Context) {
 
 	var req dto.ViewPresignedURLsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		mess := validator.HandleRequestError(err)
-		utils.BadRequestResponse(c, mess)
+		field, tag, param := validator.HandleRequestError(err)
+		c.Error(errors.ErrBadRequest.WithData(gin.H{
+			"field": field,
+			"tag":   tag,
+			"param": param,
+		}))
 		return
 	}
 
@@ -67,14 +67,7 @@ func (h *FileHandler) ViewPresignedURLs(c *gin.Context) {
 		return
 	}
 
-	utils.APIResponse(
-		c,
-		http.StatusOK,
-		constants.CodeSuccess,
-		constants.SlugSuccess,
-		"Generate view presigned urls successfully",
-		gin.H{
-			"presigned_urls": presignedURLs,
-		},
-	)
+	utils.OKResponse(c, gin.H{
+		"presigned_urls": presignedURLs,
+	})
 }
