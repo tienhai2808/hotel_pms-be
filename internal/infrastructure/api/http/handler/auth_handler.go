@@ -247,6 +247,38 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	utils.APIResponse(c, http.StatusOK, constants.CodeResetPasswordSuccess, "Reset password successfully", nil)
 }
 
+func (h *AuthHandler) UpdateInfo(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	userID := c.GetInt64(middleware.CtxUserID)
+	if userID == 0 {
+		c.Error(errors.ErrUnAuth)
+		return
+	}
+
+	var req dto.UpdateInfoRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		field, tag, param := validator.HandleRequestError(err)
+		c.Error(errors.ErrBadRequest.WithData(gin.H{
+			"field": field,
+			"tag":   tag,
+			"param": param,
+		}))
+		return
+	}
+
+	updatedUser, err := h.authUC.UpdateInfo(ctx, userID, req)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	utils.APIResponse(c, http.StatusOK, constants.CodeUpdateInfoSuccess, "User updated successfully", gin.H{
+		"user": mapper.ToUserResponse(updatedUser),
+	})
+}
+
 func (h *AuthHandler) storeTokenInCookie(c *gin.Context, accessToken, refreshToken string, accessExpiresIn, refreshExpiresIn int) {
 	isSecure := c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https"
 	domain := utils.ExtractRootDomain(c.Request.Host)

@@ -24,4 +24,6 @@ type AuthUseCase interface {
 	VerifyForgotPassword(ctx context.Context, req dto.VerifyForgotPasswordRequest) (string, error)
 
 	ResetPassword(ctx context.Context, req dto.ResetPasswordRequest) error
+
+	UpdateInfo(ctx context.Context, userID int64, req dto.UpdateInfoRequest) (*model.User, error)
 }

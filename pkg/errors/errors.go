@@ -26,6 +26,10 @@ var (
 	ErrTooManyAttempts = NewAPIError(http.StatusTooManyRequests, constants.CodeTooManyAttempts, "Too many attempts")
 
 	ErrInvalidOTP = NewAPIError(http.StatusBadRequest, constants.CodeInvalidOTP, "Invalid or expired OTP")
+
+	ErrEmailAlreadyExists = NewAPIError(http.StatusConflict, constants.CodeEmailAlreadyExists, "Email already exists")
+
+	ErrPhoneAlreadyExists = NewAPIError(http.StatusConflict, constants.CodePhoneAlreadyExists, "Phone already exists")
 )
 
 type APIError struct {

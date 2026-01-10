@@ -36,3 +36,10 @@ type ResetPasswordRequest struct {
 	ResetPasswordToken string `json:"reset_password_token" binding:"required,uuid4"`
 	NewPassword        string `json:"new_password" binding:"required,min=6"`
 }
+
+type UpdateInfoRequest struct {
+	Email     string `json:"email" binding:"required,email"`
+	Phone     string `json:"phone" binding:"required,len=10"`
+	FirstName string `json:"first_name" binding:"required"`
+	LastName  string `json:"last_name" binding:"required"`
+}

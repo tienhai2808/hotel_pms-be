@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"github.com/InstayPMS/backend/pkg/constants"
 	"github.com/gin-gonic/gin"
 	"github.com/gosimple/slug"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/mssola/useragent"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -108,4 +110,23 @@ func ExtractRootDomain(host string) string {
 	}
 
 	return host
+}
+
+func IsUniqueViolation(err error) (bool, string) {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		if pgErr.Code == "23505" {
+			return true, pgErr.ConstraintName
+		}
+	}
+
+	return false, ""
+}
+
+func IsForeignKeyViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code == "23503"
+	}
+	return false
 }

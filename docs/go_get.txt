@@ -25,3 +25,5 @@ go get -u github.com/mssola/useragent (User agent)
 go get github.com/google/uuid (UUID)
 
 go get github.com/rabbitmq/amqp091-go (AMQP)
+
+go get github.com/jackc/pgx/v5/pgconn (DB connect)

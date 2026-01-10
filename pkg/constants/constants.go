@@ -8,6 +8,7 @@ const (
 	CodeForgotPasswordSuccess       = 1004
 	CodeVerifyForgotPasswordSuccess = 1005
 	CodeResetPasswordSuccess        = 1006
+	CodeUpdateInfoSuccess           = 1007
 	CodeBadRequest                  = 4000
 	CodeLoginFailed                 = 4001
 	CodeInvalidToken                = 4002
@@ -18,6 +19,8 @@ const (
 	CodeEmailDoesNotExist           = 4007
 	CodeTooManyAttempts             = 4008
 	CodeInvalidOTP                  = 4009
+	CodeEmailAlreadyExists          = 4010
+	CodePhoneAlreadyExists          = 4011
 	CodeInternalError               = 5000
 
 	ExchangeEmail       = "email.send"

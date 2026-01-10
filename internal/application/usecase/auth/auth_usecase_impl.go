@@ -207,7 +207,7 @@ func (u *authUseCaseImpl) GetMe(ctx context.Context, userID int64) (*model.User,
 		return nil, err
 	}
 	if user == nil {
-		return nil, customErr.ErrUnAuth
+		return nil, customErr.ErrInvalidUser
 	}
 
 	return user, nil
@@ -220,7 +220,7 @@ func (u *authUseCaseImpl) ChangePassword(ctx context.Context, userID int64, req 
 		return err
 	}
 	if user == nil {
-		return customErr.ErrUnAuth
+		return customErr.ErrInvalidUser
 	}
 
 	if err = utils.VerifyPassword(req.OldPassword, user.Password); err != nil {
@@ -236,7 +236,7 @@ func (u *authUseCaseImpl) ChangePassword(ctx context.Context, userID int64, req 
 	if err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err = u.userRepo.UpdateTx(tx, userID, map[string]any{"password": hashedPassword}); err != nil {
 			if errors.Is(err, customErr.ErrUserNotFound) {
-				return customErr.ErrInvalidToken
+				return customErr.ErrInvalidUser
 			}
 			u.log.Error("update password failed", zap.Error(err))
 			return err
@@ -370,7 +370,7 @@ func (u *authUseCaseImpl) ResetPassword(ctx context.Context, req dto.ResetPasswo
 		return err
 	}
 	if user == nil {
-		return customErr.ErrInvalidUser
+		return customErr.ErrUnAuth
 	}
 
 	hashedPassword, err := utils.HashPassword(req.NewPassword)
@@ -379,19 +379,71 @@ func (u *authUseCaseImpl) ResetPassword(ctx context.Context, req dto.ResetPasswo
 		return err
 	}
 
-	if err = u.userRepo.Update(ctx, user.ID, map[string]any{"password": hashedPassword}); err != nil {
-		if errors.Is(err, customErr.ErrUserNotFound) {
-			return customErr.ErrInvalidUser
+	if err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err = u.userRepo.UpdateTx(tx, user.ID, map[string]any{"password": hashedPassword}); err != nil {
+			if errors.Is(err, customErr.ErrUserNotFound) {
+				return customErr.ErrUnAuth
+			}
+			u.log.Error("update password failed", zap.Error(err))
+			return err
 		}
-		u.log.Error("update user failed", zap.Int64("id", user.ID), zap.Error(err))
-		return err
+
+		if err := u.tokenRepo.UpdateByUserIDTx(tx, user.ID, map[string]any{"revoked_at": time.Now()}); err != nil {
+			u.log.Error("update token by user id failed", zap.Error(err))
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil
 	}
 
 	if err = u.cachePro.Del(ctx, redisKey); err != nil {
 		u.log.Error("delete reset password failed", zap.Error(err))
 	}
 
+	redisKey = fmt.Sprintf("user_version:%d", user.ID)
+	if err = u.cachePro.Increment(ctx, redisKey); err != nil {
+		u.log.Error("increase token version failed", zap.Error(err))
+	}
+
 	return nil
+}
+
+func (u *authUseCaseImpl) UpdateInfo(ctx context.Context, userID int64, req dto.UpdateInfoRequest) (*model.User, error) {
+	updateData := map[string]any{
+		"email":      req.Email,
+		"phone":      req.Phone,
+		"first_name": req.FirstName,
+		"last_name":  req.LastName,
+	}
+
+	if err := u.userRepo.Update(ctx, userID, updateData); err != nil {
+		if errors.Is(err, customErr.ErrUserNotFound) {
+			return nil, customErr.ErrInvalidUser
+		}
+		ok, constraint := utils.IsUniqueViolation(err)
+		if ok {
+			switch constraint {
+			case "users_email_key":
+				return nil, customErr.ErrEmailAlreadyExists
+			case "users_phone_key":
+				return nil, customErr.ErrPhoneAlreadyExists
+			}
+		}
+		u.log.Error("update user failed", zap.Int64("id", userID), zap.Error(err))
+		return nil, err
+	}
+
+	user, err := u.userRepo.FindByIDWithOutletAndDepartment(ctx, userID)
+	if err != nil {
+		u.log.Error("find user by id failed", zap.Int64("id", userID), zap.Error(err))
+		return nil, err
+	}
+	if user == nil {
+		return nil, customErr.ErrInvalidUser
+	}
+
+	return user, nil
 }
 
 func generateRefreshToken() (string, error) {
