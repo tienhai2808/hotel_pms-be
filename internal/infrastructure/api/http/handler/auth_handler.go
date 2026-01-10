@@ -224,6 +224,29 @@ func (h *AuthHandler) VerifyForgotPassword(c *gin.Context) {
 	})
 }
 
+func (h *AuthHandler) ResetPassword(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	var req dto.ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		field, tag, param := validator.HandleRequestError(err)
+		c.Error(errors.ErrBadRequest.WithData(gin.H{
+			"field": field,
+			"tag":   tag,
+			"param": param,
+		}))
+		return
+	}
+
+	if err := h.authUC.ResetPassword(ctx, req); err != nil {
+		c.Error(err)
+		return
+	}
+
+	utils.APIResponse(c, http.StatusOK, constants.CodeResetPasswordSuccess, "Reset password successfully", nil)
+}
+
 func (h *AuthHandler) storeTokenInCookie(c *gin.Context, accessToken, refreshToken string, accessExpiresIn, refreshExpiresIn int) {
 	isSecure := c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https"
 	domain := utils.ExtractRootDomain(c.Request.Host)

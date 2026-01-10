@@ -17,4 +17,8 @@ type UserRepository interface {
 	UpdateTx(tx *gorm.DB, id int64, updateData map[string]any) error
 
 	ExistsByEmail(ctx context.Context, email string) (bool, error)
+
+	FindByEmail(ctx context.Context, email string) (*model.User, error)
+
+	Update(ctx context.Context, id int64, updateData map[string]any) error
 }

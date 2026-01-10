@@ -7,6 +7,7 @@ const (
 	CodeChangePasswordSuccess       = 1003
 	CodeForgotPasswordSuccess       = 1004
 	CodeVerifyForgotPasswordSuccess = 1005
+	CodeResetPasswordSuccess        = 1006
 	CodeBadRequest                  = 4000
 	CodeLoginFailed                 = 4001
 	CodeInvalidToken                = 4002

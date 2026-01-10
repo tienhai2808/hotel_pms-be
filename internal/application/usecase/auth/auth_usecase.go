@@ -22,4 +22,6 @@ type AuthUseCase interface {
 	ForgotPassword(ctx context.Context, email string) (string, error)
 
 	VerifyForgotPassword(ctx context.Context, req dto.VerifyForgotPasswordRequest) (string, error)
+
+	ResetPassword(ctx context.Context, req dto.ResetPasswordRequest) error
 }

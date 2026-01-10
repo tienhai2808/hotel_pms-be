@@ -64,8 +64,37 @@ func (r *userRepositoryImpl) FindByID(ctx context.Context, id int64) (*model.Use
 	return &user, nil
 }
 
+func (r *userRepositoryImpl) FindByEmail(ctx context.Context, email string) (*model.User, error) {
+	var user model.User
+	if err := r.db.WithContext(ctx).
+		Where("email = ?", email).
+		First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
 func (r *userRepositoryImpl) UpdateTx(tx *gorm.DB, id int64, updateData map[string]any) error {
 	result := tx.Model(&model.User{}).
+		Where("id = ?", id).
+		Updates(updateData)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return customErr.ErrUserNotFound
+	}
+
+	return nil
+}
+
+func (r *userRepositoryImpl) Update(ctx context.Context, id int64, updateData map[string]any) error {
+	result := r.db.WithContext(ctx).Model(&model.User{}).
 		Where("id = ?", id).
 		Updates(updateData)
 	if result.Error != nil {

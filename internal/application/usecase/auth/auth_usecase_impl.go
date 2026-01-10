@@ -65,12 +65,7 @@ func (u *authUseCaseImpl) Login(ctx context.Context, ua string, req dto.LoginReq
 		u.log.Error("find user by username failed", zap.String("username", req.Username), zap.Error(err))
 		return nil, "", "", err
 	}
-
-	if user == nil {
-		return nil, "", "", customErr.ErrLoginFailed
-	}
-
-	if !user.IsActive {
+	if user == nil || !user.IsActive {
 		return nil, "", "", customErr.ErrLoginFailed
 	}
 
@@ -84,7 +79,6 @@ func (u *authUseCaseImpl) Login(ctx context.Context, ua string, req dto.LoginReq
 		u.log.Error("get token version failed", zap.Error(err))
 		return nil, "", "", err
 	}
-
 	if tokenVersion == 0 {
 		if err = u.cachePro.SetString(ctx, redisKey, "1", 0); err != nil {
 			u.log.Error("save token version failed", zap.Error(err))
@@ -155,7 +149,6 @@ func (u *authUseCaseImpl) RefreshToken(ctx context.Context, ua, refreshToken str
 		u.log.Error("find token by token failed", zap.Error(err))
 		return "", "", nil
 	}
-
 	if token == nil || token.RevokedAt != nil || token.ExpiresAt.Before(time.Now()) {
 		return "", "", customErr.ErrInvalidUser
 	}
@@ -168,7 +161,6 @@ func (u *authUseCaseImpl) RefreshToken(ctx context.Context, ua, refreshToken str
 		u.log.Error("get token version failed", zap.Error(err))
 		return "", "", err
 	}
-
 	if tokenVersion == 0 {
 		return "", "", customErr.ErrInvalidUser
 	}
@@ -214,7 +206,6 @@ func (u *authUseCaseImpl) GetMe(ctx context.Context, userID int64) (*model.User,
 		u.log.Error("find user by id failed", zap.Int64("id", userID), zap.Error(err))
 		return nil, err
 	}
-
 	if user == nil {
 		return nil, customErr.ErrUnAuth
 	}
@@ -228,7 +219,6 @@ func (u *authUseCaseImpl) ChangePassword(ctx context.Context, userID int64, req 
 		u.log.Error("find user by id failed", zap.Int64("id", userID), zap.Error(err))
 		return err
 	}
-
 	if user == nil {
 		return customErr.ErrUnAuth
 	}
@@ -275,7 +265,6 @@ func (u *authUseCaseImpl) ForgotPassword(ctx context.Context, email string) (str
 		u.log.Error("check user by email failed", zap.String("email", email), zap.Error(err))
 		return "", err
 	}
-
 	if !exists {
 		return "", customErr.ErrEmailDoesNotExist
 	}
@@ -328,7 +317,6 @@ func (u *authUseCaseImpl) VerifyForgotPassword(ctx context.Context, req dto.Veri
 		u.log.Error("get forgot password data failed", zap.Error(err))
 		return "", err
 	}
-
 	if bytes == nil {
 		return "", customErr.ErrInvalidToken
 	}
@@ -346,7 +334,6 @@ func (u *authUseCaseImpl) VerifyForgotPassword(ctx context.Context, req dto.Veri
 		}
 		return "", customErr.ErrTooManyAttempts
 	}
-
 	if forgData.Otp != req.Otp {
 		return "", customErr.ErrInvalidOTP
 	}
@@ -364,6 +351,47 @@ func (u *authUseCaseImpl) VerifyForgotPassword(ctx context.Context, req dto.Veri
 	}
 
 	return resetPasswordToken, nil
+}
+
+func (u *authUseCaseImpl) ResetPassword(ctx context.Context, req dto.ResetPasswordRequest) error {
+	redisKey := fmt.Sprintf("reset_password:%s", req.ResetPasswordToken)
+	email, err := u.cachePro.GetString(ctx, redisKey)
+	if err != nil {
+		u.log.Error("get email reset password failed", zap.Error(err))
+		return err
+	}
+	if email == "" {
+		return customErr.ErrInvalidToken
+	}
+
+	user, err := u.userRepo.FindByEmail(ctx, email)
+	if err != nil {
+		u.log.Error("find user by email failed", zap.String("email", email), zap.Error(err))
+		return err
+	}
+	if user == nil {
+		return customErr.ErrInvalidUser
+	}
+
+	hashedPassword, err := utils.HashPassword(req.NewPassword)
+	if err != nil {
+		u.log.Error("hash password failed", zap.Error(err))
+		return err
+	}
+
+	if err = u.userRepo.Update(ctx, user.ID, map[string]any{"password": hashedPassword}); err != nil {
+		if errors.Is(err, customErr.ErrUserNotFound) {
+			return customErr.ErrInvalidUser
+		}
+		u.log.Error("update user failed", zap.Int64("id", user.ID), zap.Error(err))
+		return err
+	}
+
+	if err = u.cachePro.Del(ctx, redisKey); err != nil {
+		u.log.Error("delete reset password failed", zap.Error(err))
+	}
+
+	return nil
 }
 
 func generateRefreshToken() (string, error) {

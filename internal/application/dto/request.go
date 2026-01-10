@@ -31,3 +31,8 @@ type VerifyForgotPasswordRequest struct {
 	ForgotPasswordToken string `json:"forgot_password_token" binding:"required,uuid4"`
 	Otp                 string `json:"otp" binding:"required,len=6,numeric"`
 }
+
+type ResetPasswordRequest struct {
+	ResetPasswordToken string `json:"reset_password_token" binding:"required,uuid4"`
+	NewPassword        string `json:"new_password" binding:"required,min=6"`
+}
