@@ -20,6 +20,12 @@ var (
 	ErrInvalidUser = NewAPIError(http.StatusForbidden, constants.CodeNoRefreshToken, "Please login again")
 
 	ErrUserNotFound = NewAPIError(http.StatusNotFound, constants.CodeUserNotFound, "User not found")
+
+	ErrEmailDoesNotExist = NewAPIError(http.StatusBadRequest, constants.CodeEmailDoesNotExist, "Email does not exist")
+
+	ErrTooManyAttempts = NewAPIError(http.StatusTooManyRequests, constants.CodeTooManyAttempts, "Too many attempts")
+
+	ErrInvalidOTP = NewAPIError(http.StatusBadRequest, constants.CodeInvalidOTP, "Invalid or expired OTP")
 )
 
 type APIError struct {

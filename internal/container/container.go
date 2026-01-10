@@ -1,6 +1,8 @@
 package container
 
 import (
+	"log"
+
 	"github.com/InstayPMS/backend/internal/application/port"
 	authUC "github.com/InstayPMS/backend/internal/application/usecase/auth"
 	fileUC "github.com/InstayPMS/backend/internal/application/usecase/file"
@@ -17,13 +19,16 @@ import (
 
 type Container struct {
 	cfg       *config.Config
-	log       *zap.Logger
+	Log       *zap.Logger
 	db        *initialization.Database
 	cache     *redis.Client
+	mq        *initialization.MQ
 	stor      *minio.Client
 	idGen     *sonyflake.Sonyflake
 	jwtPro    port.JWTProvider
+	MQPro     port.MessageQueueProvider
 	cachePro  port.CacheProvider
+	SMTPPro   port.SMTPProvider
 	userRepo  repository.UserRepository
 	tokenRepo repository.TokenRepository
 	fileUC    fileUC.FileUseCase
@@ -54,4 +59,9 @@ func (c *Container) Cleanup() {
 	if c.db != nil {
 		c.db.Close()
 	}
+	if c.mq != nil {
+		c.mq.Close()
+	}
+
+	log.Println("Container cleaned successfully")
 }

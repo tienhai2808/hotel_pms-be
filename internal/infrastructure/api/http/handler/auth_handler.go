@@ -172,6 +172,58 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	utils.APIResponse(c, http.StatusOK, constants.CodeChangePasswordSuccess, "Change password successfully", nil)
 }
 
+func (h *AuthHandler) ForgotPassword(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	var req dto.ForgotPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		field, tag, param := validator.HandleRequestError(err)
+		c.Error(errors.ErrBadRequest.WithData(gin.H{
+			"field": field,
+			"tag":   tag,
+			"param": param,
+		}))
+		return
+	}
+
+	forgotPasswordToken, err := h.authUC.ForgotPassword(ctx, req.Email)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	utils.APIResponse(c, http.StatusOK, constants.CodeForgotPasswordSuccess, "Forgot password successfully", gin.H{
+		"forgot_password_token": forgotPasswordToken,
+	})
+}
+
+func (h *AuthHandler) VerifyForgotPassword(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	var req dto.VerifyForgotPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		field, tag, param := validator.HandleRequestError(err)
+		c.Error(errors.ErrBadRequest.WithData(gin.H{
+			"field": field,
+			"tag":   tag,
+			"param": param,
+		}))
+		return
+	}
+
+	resetPasswordToken, err := h.authUC.VerifyForgotPassword(ctx, req)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	utils.APIResponse(c, http.StatusOK, constants.CodeVerifyForgotPasswordSuccess, "Verify forgot password successfully", gin.H{
+		"reset_password_token": resetPasswordToken,
+	})
+}
+
 func (h *AuthHandler) storeTokenInCookie(c *gin.Context, accessToken, refreshToken string, accessExpiresIn, refreshExpiresIn int) {
 	isSecure := c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https"
 	domain := utils.ExtractRootDomain(c.Request.Host)

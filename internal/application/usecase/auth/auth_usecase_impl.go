@@ -2,6 +2,9 @@ package usecase
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -11,8 +14,10 @@ import (
 	"github.com/InstayPMS/backend/internal/domain/model"
 	"github.com/InstayPMS/backend/internal/domain/repository"
 	"github.com/InstayPMS/backend/internal/infrastructure/config"
+	"github.com/InstayPMS/backend/pkg/constants"
 	customErr "github.com/InstayPMS/backend/pkg/errors"
 	"github.com/InstayPMS/backend/pkg/utils"
+	"github.com/google/uuid"
 	"github.com/sony/sonyflake/v2"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -25,6 +30,7 @@ type authUseCaseImpl struct {
 	idGen     *sonyflake.Sonyflake
 	jwtPro    port.JWTProvider
 	cachePro  port.CacheProvider
+	mqPro     port.MessageQueueProvider
 	userRepo  repository.UserRepository
 	tokenRepo repository.TokenRepository
 }
@@ -36,6 +42,7 @@ func NewAuthUseCase(
 	idGen *sonyflake.Sonyflake,
 	jwtPro port.JWTProvider,
 	cachePro port.CacheProvider,
+	mqPro port.MessageQueueProvider,
 	userRepo repository.UserRepository,
 	tokenRepo repository.TokenRepository,
 ) AuthUseCase {
@@ -46,6 +53,7 @@ func NewAuthUseCase(
 		idGen,
 		jwtPro,
 		cachePro,
+		mqPro,
 		userRepo,
 		tokenRepo,
 	}
@@ -91,7 +99,7 @@ func (u *authUseCaseImpl) Login(ctx context.Context, ua string, req dto.LoginReq
 		return nil, "", "", err
 	}
 
-	refreshToken, err := utils.GenerateRefreshToken()
+	refreshToken, err := generateRefreshToken()
 	if err != nil {
 		u.log.Error("generate refresh token failed", zap.Error(err))
 		return nil, "", "", err
@@ -171,7 +179,7 @@ func (u *authUseCaseImpl) RefreshToken(ctx context.Context, ua, refreshToken str
 		return "", "", err
 	}
 
-	newRefreshToken, err := utils.GenerateRefreshToken()
+	newRefreshToken, err := generateRefreshToken()
 	if err != nil {
 		u.log.Error("generate refresh token failed", zap.Error(err))
 		return "", "", err
@@ -259,4 +267,112 @@ func (u *authUseCaseImpl) ChangePassword(ctx context.Context, userID int64, req 
 	}
 
 	return nil
+}
+
+func (u *authUseCaseImpl) ForgotPassword(ctx context.Context, email string) (string, error) {
+	exists, err := u.userRepo.ExistsByEmail(ctx, email)
+	if err != nil {
+		u.log.Error("check user by email failed", zap.String("email", email), zap.Error(err))
+		return "", err
+	}
+
+	if !exists {
+		return "", customErr.ErrEmailDoesNotExist
+	}
+
+	otp := utils.GenerateOTP(6)
+	forgotPasswordToken := uuid.NewString()
+
+	forgData := dto.ForgotPasswordData{
+		Email:    email,
+		Otp:      otp,
+		Attempts: 0,
+	}
+
+	bytes, err := json.Marshal(forgData)
+	if err != nil {
+		u.log.Error("json marshal forgot password data failed", zap.Error(err))
+		return "", err
+	}
+
+	redisKey := fmt.Sprintf("forgot_password:%s", forgotPasswordToken)
+	if err = u.cachePro.SetObject(ctx, redisKey, bytes, 3*time.Minute); err != nil {
+		u.log.Error("save forgot password data failed", zap.Error(err))
+		return "", err
+	}
+
+	emailMsg := dto.AuthEmailMessage{
+		To:      email,
+		Subject: "Xác thực quên mật khẩu tại Instay",
+		Otp:     otp,
+	}
+
+	go func(msg dto.AuthEmailMessage) {
+		body, err := json.Marshal(msg)
+		if err != nil {
+			u.log.Error("json marshal failed", zap.Error(err))
+		}
+
+		if u.mqPro.PublishMessage(constants.ExchangeEmail, constants.RoutingKeyAuthEmail, body); err != nil {
+			u.log.Error("publish auth email message failed", zap.String("email", email), zap.Error(err))
+		}
+	}(emailMsg)
+
+	return forgotPasswordToken, nil
+}
+
+func (u *authUseCaseImpl) VerifyForgotPassword(ctx context.Context, req dto.VerifyForgotPasswordRequest) (string, error) {
+	redisKey := fmt.Sprintf("forgot_password:%s", req.ForgotPasswordToken)
+	bytes, err := u.cachePro.GetObject(ctx, redisKey)
+	if err != nil {
+		u.log.Error("get forgot password data failed", zap.Error(err))
+		return "", err
+	}
+
+	if bytes == nil {
+		return "", customErr.ErrInvalidToken
+	}
+
+	var forgData dto.ForgotPasswordData
+	if err = json.Unmarshal(bytes, &forgData); err != nil {
+		u.log.Error("json unmarshal forgot password data failed", zap.Error(err))
+		return "", nil
+	}
+
+	if forgData.Attempts >= 3 {
+		if err = u.cachePro.Del(ctx, redisKey); err != nil {
+			u.log.Error("delete forgot password data failed", zap.Error(err))
+			return "", err
+		}
+		return "", customErr.ErrTooManyAttempts
+	}
+
+	if forgData.Otp != req.Otp {
+		return "", customErr.ErrInvalidOTP
+	}
+
+	resetPasswordToken := uuid.NewString()
+	key := fmt.Sprintf("reset_password:%s", resetPasswordToken)
+
+	if err = u.cachePro.SetString(ctx, key, forgData.Email, 3*time.Minute); err != nil {
+		u.log.Error("save email reset password failed", zap.Error(err))
+		return "", err
+	}
+
+	if err = u.cachePro.Del(ctx, redisKey); err != nil {
+		u.log.Error("delete forgot password data failed", zap.Error(err))
+	}
+
+	return resetPasswordToken, nil
+}
+
+func generateRefreshToken() (string, error) {
+	randomBytes := make([]byte, 32)
+	if _, err := rand.Read(randomBytes); err != nil {
+		return "", err
+	}
+
+	rawToken := base64.RawURLEncoding.EncodeToString(randomBytes)
+
+	return rawToken, nil
 }

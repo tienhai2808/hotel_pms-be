@@ -1,11 +1,10 @@
 package utils
 
 import (
-	"crypto/rand"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"strings"
 
@@ -41,6 +40,20 @@ func GenerateSlug(str string) string {
 	return slug.Make(str)
 }
 
+func GenerateOTP(length uint8) string {
+	const chars = "0123456789"
+	otp := make([]byte, length)
+	for i := range otp {
+		otp[i] = chars[rand.Intn(len(chars))]
+	}
+	return string(otp)
+}
+
+func SHA256Hash(str string) string {
+	hashArray := sha256.Sum256([]byte(str))
+	return hex.EncodeToString(hashArray[:])
+}
+
 func HashPassword(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -51,22 +64,6 @@ func HashPassword(password string) (string, error) {
 
 func VerifyPassword(password, hashedPassword string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-}
-
-func GenerateRefreshToken() (string, error) {
-	randomBytes := make([]byte, 32)
-	if _, err := rand.Read(randomBytes); err != nil {
-		return "", err
-	}
-
-	rawToken := base64.RawURLEncoding.EncodeToString(randomBytes)
-
-	return rawToken, nil
-}
-
-func SHA256Hash(str string) string {
-	hashArray := sha256.Sum256([]byte(str))
-	return hex.EncodeToString(hashArray[:])
 }
 
 func ConvertUserAgent(uaReq string) string {

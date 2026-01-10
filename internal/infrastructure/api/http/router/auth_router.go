@@ -18,5 +18,9 @@ func (r *Router) setupAuthRoutes(rg *gin.RouterGroup, authMid *middleware.AuthMi
 		auth.GET("/me", authMid.IsAuthentication(), hdl.GetMe)
 
 		auth.POST("/change-password", authMid.IsAuthentication(), hdl.ChangePassword)
+
+		auth.POST("/forgot-password", hdl.ForgotPassword)
+
+		auth.POST("/forgot-password/verify", hdl.VerifyForgotPassword)
 	}
 }

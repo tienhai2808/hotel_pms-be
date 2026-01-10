@@ -56,6 +56,18 @@ func LoadConfig() (*Config, error) {
 	viper.BindEnv("super_user.password", "SU_PASSWORD")
 	viper.BindEnv("super_user.username", "SU_USERNAME")
 
+	viper.BindEnv("smtp.host", "SMTP_HOST")
+	viper.BindEnv("smtp.port", "SMTP_PORT")
+	viper.BindEnv("smtp.user", "SMTP_USER")
+	viper.BindEnv("smtp.password", "SMTP_PASSWORD")
+
+	viper.BindEnv("rabbitmq.host", "RMQ_HOST")
+	viper.BindEnv("rabbitmq.port", "RMQ_PORT")
+	viper.BindEnv("rabbitmq.user", "RMQ_USER")
+	viper.BindEnv("rabbitmq.password", "RMQ_PASSWORD")
+	viper.BindEnv("rabbitmq.vhost", "RMQ_VHOST")
+	viper.BindEnv("rabbitmq.use_ssl", "RMQ_USE_SSL")
+
 	viper.AddConfigPath("./configs")
 	viper.SetConfigName("config")
 	viper.SetConfigType("yml")

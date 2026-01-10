@@ -18,4 +18,8 @@ type AuthUseCase interface {
 	GetMe(ctx context.Context, userID int64) (*model.User, error)
 
 	ChangePassword(ctx context.Context, userID int64, req dto.ChangePasswordRequest) error
+
+	ForgotPassword(ctx context.Context, email string) (string, error)
+
+	VerifyForgotPassword(ctx context.Context, req dto.VerifyForgotPasswordRequest) (string, error)
 }

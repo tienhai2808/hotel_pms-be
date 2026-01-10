@@ -67,6 +67,22 @@ type SuperUserConfig struct {
 	Password string `mapstructure:"password"`
 }
 
+type RabbitMQ struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+	Vhost    string `mapstructure:"vhost"`
+	UseSSL   bool   `mapstructure:"use_ssl"`
+}
+
+type SMTPConfig struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+}
+
 type Config struct {
 	Server     ServerConfig     `mapstructure:"server"`
 	JWT        JWTConfig        `mapstructure:"jwt"`
@@ -75,4 +91,6 @@ type Config struct {
 	Redis      RedisConfig      `mapstructure:"redis"`
 	MinIO      MinIOConfig      `mapstructure:"minio"`
 	SuperUser  SuperUserConfig  `mapstructure:"super_user"`
+	RabbitMQ   RabbitMQ         `mapstructure:"rabbitmq"`
+	SMTPConfig SMTPConfig       `mapstructure:"smtp"`
 }

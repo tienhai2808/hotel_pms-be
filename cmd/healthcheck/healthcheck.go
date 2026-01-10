@@ -14,11 +14,16 @@ func main() {
 		port = "8080"
 	}
 
+	apiPrefix, exists := os.LookupEnv("SV_API_PREFIX")
+	if !exists {
+		apiPrefix = "/api/v2"
+	}
+
 	client := &http.Client{
 		Timeout: 2 * time.Second,
 	}
 
-	resp, err := client.Get("http://localhost:" + port + "/ping")
+	resp, err := client.Get("http://localhost:" + port + apiPrefix + "/ping")
 	if err != nil {
 		log.Fatal(err)
 	}

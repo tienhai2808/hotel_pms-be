@@ -21,3 +21,7 @@ go get github.com/redis/go-redis/v9 (Cache)
 go get github.com/sony/sonyflake/v2 (Snowflake ID)
 
 go get -u github.com/mssola/useragent (User agent)
+
+go get github.com/google/uuid (UUID)
+
+go get github.com/rabbitmq/amqp091-go (AMQP)

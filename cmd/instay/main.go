@@ -3,8 +3,10 @@ package main
 import (
 	"log"
 
+	"github.com/InstayPMS/backend/internal/container"
 	"github.com/InstayPMS/backend/internal/infrastructure/api"
 	"github.com/InstayPMS/backend/internal/infrastructure/config"
+	"github.com/InstayPMS/backend/internal/infrastructure/worker"
 )
 
 func main() {
@@ -13,10 +15,15 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	sv, err := api.NewServer(cfg)
+	ctn, err := container.NewContainer(cfg)
 	if err != nil {
-		log.Fatalf("Server initialization failed: %v", err)
+		log.Fatalln(err)
 	}
+
+	sv := api.NewServer(cfg, ctn)
+
+	mqWorker := worker.NewMessageQueueWorker(ctn.MQPro, ctn.SMTPPro, ctn.Log)
+	mqWorker.Start()
 
 	ch := make(chan error, 1)
 	go func() {
@@ -28,4 +35,6 @@ func main() {
 	log.Printf("Server is running at: http://localhost:%d", cfg.Server.Port)
 
 	sv.GracefulShutdown(ch)
+
+	ctn.Cleanup()
 }

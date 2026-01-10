@@ -19,15 +19,9 @@ import (
 type Server struct {
 	cfg  *config.Config
 	http *http.Server
-	ctn  *container.Container
 }
 
-func NewServer(cfg *config.Config) (*Server, error) {
-	ctn, err := container.NewContainer(cfg)
-	if err != nil {
-		return nil, err
-	}
-
+func NewServer(cfg *config.Config, ctn *container.Container) *Server {
 	r := gin.New()
 	_ = r.SetTrustedProxies([]string{"0.0.0.0/0"})
 
@@ -65,8 +59,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	return &Server{
 		cfg,
 		http,
-		ctn,
-	}, nil
+	}
 }
 
 func (s *Server) Start() error {
@@ -74,8 +67,6 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Shutdown(ctx context.Context) {
-	s.ctn.Cleanup()
-
 	if s.http != nil {
 		if err := s.http.Shutdown(ctx); err != nil {
 			log.Printf("Server shutdown failed: %v", err)
