@@ -35,7 +35,7 @@ type Container struct {
 	cachePro          port.CacheProvider
 	SMTPPro           port.SMTPProvider
 	UserRepo          repository.UserRepository
-	tokenRepo         repository.TokenRepository
+	TokenRepo         repository.TokenRepository
 	departmentRepo    repository.DepartmentRepository
 	fileUC            fileUC.FileUseCase
 	authUC            authUC.AuthUseCase
@@ -55,7 +55,13 @@ func NewContainer(cfg *config.Config) *Container {
 	}
 }
 
-func (c *Container) InitServer() error {
+func (c *Container) InitServer() (err error) {
+	defer func() {
+		if err != nil {
+			c.Cleanup()
+		}
+	}()
+
 	if err := c.initCore(); err != nil {
 		return err
 	}
@@ -66,8 +72,13 @@ func (c *Container) InitServer() error {
 	return nil
 }
 
-func (c *Container) InitSeed() error {
-	var err error
+func (c *Container) InitSeed() (err error) {
+	defer func() {
+		if err != nil {
+			c.Cleanup()
+		}
+	}()
+
 	c.Log, err = initialization.InitZap(c.cfg.Log)
 	if err != nil {
 		return err
@@ -88,8 +99,13 @@ func (c *Container) InitSeed() error {
 	return nil
 }
 
-func (c *Container) InitConsumer() error {
-	var err error
+func (c *Container) InitConsumer() (err error) {
+	defer func() {
+		if err != nil {
+			c.Cleanup()
+		}
+	}()
+
 	c.Log, err = initialization.InitZap(c.cfg.Log)
 	if err != nil {
 		return err
@@ -102,6 +118,28 @@ func (c *Container) InitConsumer() error {
 
 	c.MQPro = rabbitmq.NewMessageQueueProvider(c.mq.Conn, c.mq.Chan, c.Log)
 	c.SMTPPro = smtp.NewSMTPProvider(c.cfg.SMTPConfig)
+
+	return nil
+}
+
+func (c *Container) InitScheduler() (err error) {
+	defer func() {
+		if err != nil {
+			c.Cleanup()
+		}
+	}()
+
+	c.Log, err = initialization.InitZap(c.cfg.Log)
+	if err != nil {
+		return err
+	}
+
+	c.DB, err = initialization.InitDatabase(c.cfg.PostgreSQL)
+	if err != nil {
+		return err
+	}
+
+	c.TokenRepo = orm.NewTokenRepository(c.DB.Gorm)
 
 	return nil
 }

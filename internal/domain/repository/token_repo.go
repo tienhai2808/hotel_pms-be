@@ -19,4 +19,6 @@ type TokenRepository interface {
 	DeleteAllByUserIDTx(tx *gorm.DB, userID int64) error
 
 	DeleteAllByUserIDsTx(tx *gorm.DB, userIDs []int64) error
+
+	DeleteAllExpired(ctx context.Context) (int64, error)
 }

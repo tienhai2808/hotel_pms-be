@@ -27,3 +27,5 @@ go get github.com/google/uuid (UUID)
 go get github.com/rabbitmq/amqp091-go (AMQP)
 
 go get github.com/jackc/pgx/v5/pgconn (DB connect)
+
+go get github.com/robfig/cron/v3 (Schedule)

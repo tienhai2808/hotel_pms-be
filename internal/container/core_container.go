@@ -8,9 +8,7 @@ import (
 	"github.com/InstaySystem/is_v2-be/internal/infrastructure/provider/smtp"
 )
 
-func (c *Container) initCore() error {
-	var err error
-
+func (c *Container) initCore() (err error) {
 	c.Log, err = initialization.InitZap(c.cfg.Log)
 	if err != nil {
 		return err

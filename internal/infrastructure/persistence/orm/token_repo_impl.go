@@ -3,6 +3,7 @@ package orm
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/InstaySystem/is_v2-be/internal/domain/model"
 	"github.com/InstaySystem/is_v2-be/internal/domain/repository"
@@ -66,4 +67,15 @@ func (r *tokenRepositoryImpl) DeleteAllByUserIDTx(tx *gorm.DB, userID int64) err
 func (r *tokenRepositoryImpl) DeleteAllByUserIDsTx(tx *gorm.DB, userIDs []int64) error {
 	return tx.Where("user_id IN ?", userIDs).
 		Delete(&model.Token{}).Error
+}
+
+func (r *tokenRepositoryImpl) DeleteAllExpired(ctx context.Context) (int64, error) {
+	result := r.db.WithContext(ctx).
+		Where("expires_at < ?", time.Now()).
+		Delete(&model.Token{})
+	if result.Error != nil {
+		return 0, result.Error
+	}
+
+	return result.RowsAffected, nil
 }

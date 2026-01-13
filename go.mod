@@ -14,6 +14,7 @@ require (
 	github.com/mssola/useragent v1.0.0
 	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/redis/go-redis/v9 v9.17.2
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/sony/sonyflake/v2 v2.2.0
 	github.com/spf13/viper v1.21.0
 	go.uber.org/zap v1.27.1

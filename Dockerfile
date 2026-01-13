@@ -24,12 +24,27 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -trimpath \
     -o healthcheck ./cmd/healthcheck/main.go
 
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags="-w -s" \
+    -trimpath \
+    -o consumer ./cmd/consumer/main.go
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags="-w -s" \
+    -trimpath \
+    -o seeder ./cmd/seeder/main.go
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags="-w -s" \
+    -trimpath \
+    -o scheduler ./cmd/scheduler/main.go
+
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags="-w -s -X main.Version=${VERSION} -X main.CommitSHA=${COMMIT_SHA} -X main.BuildDate=${BUILD_DATE}" \
     -trimpath \
-    -o api ./cmd/instay/main.go
+    -o server ./cmd/server/main.go
 
 FROM gcr.io/distroless/static-debian12:nonroot AS production
 
@@ -37,7 +52,13 @@ WORKDIR /app
 
 COPY --from=builder --chown=nonroot:nonroot /app/healthcheck .
 
-COPY --from=builder --chown=nonroot:nonroot /app/api .
+COPY --from=builder --chown=nonroot:nonroot /app/consumer .
+
+COPY --from=builder --chown=nonroot:nonroot /app/seeder .
+
+COPY --from=builder --chown=nonroot:nonroot /app/scheduler .
+
+COPY --from=builder --chown=nonroot:nonroot /app/server .
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD ["./healthcheck"]
@@ -47,5 +68,3 @@ USER nonroot
 ENV GIN_MODE=release
 
 EXPOSE 8080
-
-CMD ["./api"]

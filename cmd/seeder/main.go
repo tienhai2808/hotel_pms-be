@@ -11,17 +11,20 @@ import (
 func main() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 
 	ctn := container.NewContainer(cfg)
 	if err := ctn.InitSeed(); err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 	defer ctn.Cleanup()
 
 	sd := seeder.NewSeeder(cfg.SuperUser, ctn.Log, ctn.DB.Gorm, ctn.IDGen, ctn.UserRepo)
 	if err = sd.Start(); err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
+
+	log.Println("Seeder finished successfully")
 }
