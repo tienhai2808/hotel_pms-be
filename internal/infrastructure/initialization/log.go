@@ -9,7 +9,11 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-func InitZap(cfg config.LogConfig) (*zap.Logger, error) {
+type Log struct {
+	zap *zap.Logger
+}
+
+func InitLog(cfg config.LogConfig) (*Log, error) {
 	level := zapcore.InfoLevel
 	if err := level.UnmarshalText([]byte(cfg.Level)); err != nil {
 		return nil, err
@@ -52,11 +56,21 @@ func InitZap(cfg config.LogConfig) (*zap.Logger, error) {
 		zapcore.NewCore(zapcore.NewConsoleEncoder(encoderConfig), consoleWriter, level),
 	)
 
-	log := zap.New(core,
+	zap := zap.New(core,
 		zap.AddCaller(),
 		zap.AddCallerSkip(1),
 		zap.AddStacktrace(zapcore.ErrorLevel),
 	)
 
-	return log, nil
+	return &Log{
+		zap,
+	}, nil
+}
+
+func (l *Log) Close() {
+	_ = l.zap.Sync()
+}
+
+func (l *Log) Logger() *zap.Logger {
+	return l.zap
 }

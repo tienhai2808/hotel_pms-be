@@ -24,9 +24,9 @@ func main() {
 	}
 	defer ctn.Cleanup()
 
-	sched := scheduler.NewScheduler(ctn.Log)
+	sched := scheduler.NewScheduler(ctn.Log.Logger())
 
-	job := job.NewCleanTokenJob(ctn.Log, ctn.TokenRepo)
+	job := job.NewCleanTokenJob(ctn.Log.Logger(), ctn.TokenRepo)
 
 	if err := sched.AddJob("12 22 * * *", job); err != nil {
 		log.Println(err)

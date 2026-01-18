@@ -11,7 +11,11 @@ import (
 	"github.com/redis/go-redis/v9/maintnotifications"
 )
 
-func InitRedis(cfg config.RedisConfig) (*redis.Client, error) {
+type Cache struct {
+	rdb *redis.Client
+}
+
+func InitCache(cfg config.RedisConfig) (*Cache, error) {
 	rAddr := cfg.Host + fmt.Sprintf(":%d", cfg.Port)
 
 	options := &redis.Options{
@@ -37,5 +41,15 @@ func InitRedis(cfg config.RedisConfig) (*redis.Client, error) {
 		return nil, err
 	}
 
-	return rdb, nil
+	return &Cache{
+		rdb,
+	}, nil
+}
+
+func (c *Cache) Client() *redis.Client {
+	return c.rdb
+}
+
+func (c *Cache) Close() {
+	_ = c.rdb.Close()
 }

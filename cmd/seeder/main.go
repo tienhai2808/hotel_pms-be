@@ -20,7 +20,7 @@ func main() {
 	}
 	defer ctn.Cleanup()
 
-	sd := seeder.NewSeeder(cfg.SuperUser, ctn.Log, ctn.DB.Gorm, ctn.IDGen, ctn.UserRepo)
+	sd := seeder.NewSeeder(cfg.SuperUser, ctn.Log.Logger(), ctn.DB.ORM(), ctn.IDGen.Generator(), ctn.UserRepo)
 	if err = sd.Start(); err != nil {
 		log.Println(err)
 		return

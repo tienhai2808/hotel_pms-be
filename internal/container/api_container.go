@@ -11,6 +11,6 @@ func (c *Container) initAPI() {
 	c.UserHTTPHdl = httpHdl.NewUserHandler(c.userUC)
 	c.DepartmentHTTPHdl = httpHdl.NewDepartmentHandler(c.departmentUC)
 
-	c.CtxHTTPMid = httpMid.NewContextMiddleware(c.Log)
-	c.AuthHTTPMid = httpMid.NewAuthMiddleware(c.cfg.JWT, c.Log, c.jwtPro, c.cachePro)
+	c.CtxHTTPMid = httpMid.NewContextMiddleware(c.Log.Logger())
+	c.AuthHTTPMid = httpMid.NewAuthMiddleware(c.cfg.JWT, c.Log.Logger(), c.jwtPro, c.cachePro)
 }

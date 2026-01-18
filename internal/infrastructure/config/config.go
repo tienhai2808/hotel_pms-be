@@ -60,6 +60,7 @@ type MinIOConfig struct {
 	Bucket          string `mapstructure:"bucket"`
 	PublicRead      bool   `mapstructure:"public_read"`
 	UseSSL          bool   `mapstructure:"use_ssl"`
+	PublicDomain    string `mapstructure:"public_domain"`
 }
 
 type SuperUserConfig struct {

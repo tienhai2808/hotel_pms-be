@@ -9,7 +9,7 @@ import (
 )
 
 func (c *Container) initCore() (err error) {
-	c.Log, err = initialization.InitZap(c.cfg.Log)
+	c.Log, err = initialization.InitLog(c.cfg.Log)
 	if err != nil {
 		return err
 	}
@@ -19,31 +19,31 @@ func (c *Container) initCore() (err error) {
 		return err
 	}
 
-	c.cache, err = initialization.InitRedis(c.cfg.Redis)
+	c.cache, err = initialization.InitCache(c.cfg.Redis)
 	if err != nil {
 		return err
 	}
 
-	c.stor, err = initialization.InitS3(c.cfg.MinIO)
+	c.stor, err = initialization.InitStorage(c.cfg.MinIO)
 	if err != nil {
 		return err
 	}
 
-	c.mq, err = initialization.InitRabbitMQ(c.cfg.RabbitMQ)
+	c.mq, err = initialization.InitMessageQueue(c.cfg.RabbitMQ)
 	if err != nil {
 		return err
 	}
 
-	c.IDGen, err = initialization.InitSnowFlake()
+	c.IDGen, err = initialization.InitIDGen()
 	if err != nil {
 		return err
 	}
 
 	c.jwtPro = jwt.NewJWTProvider(c.cfg.JWT)
 
-	c.cachePro = redis.NewCacheProvider(c.cache)
+	c.cachePro = redis.NewCacheProvider(c.cache.Client())
 
-	c.MQPro = rabbitmq.NewMessageQueueProvider(c.mq.Conn, c.mq.Chan, c.Log)
+	c.MQPro = rabbitmq.NewMessageQueueProvider(c.mq.Connection(), c.Log.Logger())
 
 	c.SMTPPro = smtp.NewSMTPProvider(c.cfg.SMTPConfig)
 

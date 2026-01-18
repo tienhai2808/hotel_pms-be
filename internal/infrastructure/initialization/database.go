@@ -15,7 +15,7 @@ import (
 )
 
 type Database struct {
-	Gorm *gorm.DB
+	gorm *gorm.DB
 	sql  *sql.DB
 }
 
@@ -29,7 +29,7 @@ func InitDatabase(cfg config.PostgreSQLConfig) (*Database, error) {
 		cfg.SSLMode,
 	)
 
-	newLogger := logger.New(
+	gormLogger := logger.New(
 		log.New(os.Stdout, "[DB] ", log.LstdFlags),
 		logger.Config{
 			SlowThreshold:             time.Second,
@@ -40,8 +40,8 @@ func InitDatabase(cfg config.PostgreSQLConfig) (*Database, error) {
 		},
 	)
 
-	pg, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger:                 newLogger,
+	gormDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger:                 gormLogger,
 		SkipDefaultTransaction: true,
 		PrepareStmt:            true,
 	})
@@ -49,31 +49,41 @@ func InitDatabase(cfg config.PostgreSQLConfig) (*Database, error) {
 		return nil, err
 	}
 
-	if err := runAutoMigrations(pg); err != nil {
-		return nil, err
-	}
-
-	sql, err := pg.DB()
+	sqlDB, err := gormDB.DB()
 	if err != nil {
 		return nil, err
 	}
 
+	db := &Database{
+		gorm: gormDB,
+		sql:  sqlDB,
+	}
+
+	if err := db.migrate(); err != nil {
+		db.Close()
+		return nil, err
+	}
+
 	return &Database{
-		pg,
-		sql,
+		gormDB,
+		sqlDB,
 	}, nil
 }
 
+func (d *Database) ORM() *gorm.DB {
+	return d.gorm
+}
+
 func (d *Database) Close() {
-	_ = d.sql.Close()
+  _ = d.sql.Close()
 }
 
-var allModels = []any{
-	&model.Department{},
-	&model.User{},
-	&model.Token{},
-}
+func (d *Database) migrate() error {
+	models := []any{
+		&model.Department{},
+		&model.User{},
+		&model.Token{},
+	}
 
-func runAutoMigrations(db *gorm.DB) error {
-	return db.AutoMigrate(allModels...)
+	return d.gorm.AutoMigrate(models...)
 }

@@ -13,7 +13,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-func InitS3(cfg config.MinIOConfig) (*s3.Client, error) {
+type Storage struct {
+	s3        *s3.Client
+	presignS3 *s3.PresignClient
+}
+
+func InitStorage(cfg config.MinIOConfig) (*Storage, error) {
 	staticCredentials := credentials.NewStaticCredentialsProvider(
 		cfg.AccessKeyID,
 		cfg.SecretAccessKey,
@@ -41,12 +46,29 @@ func InitS3(cfg config.MinIOConfig) (*s3.Client, error) {
 
 	protocol := "http"
 	if cfg.UseSSL {
-		protocol = protocol + "s"
+		protocol += "s"
 	}
 	client := s3.NewFromConfig(aCfg, func(o *s3.Options) {
 		o.UsePathStyle = true
 		o.BaseEndpoint = aws.String(fmt.Sprintf("%s://%s", protocol, cfg.Endpoint))
 	})
 
-	return client, nil
+	publicClient := s3.NewFromConfig(aCfg, func(o *s3.Options) {
+		o.UsePathStyle = true
+		o.BaseEndpoint = aws.String(cfg.PublicDomain)
+	})
+	presigner := s3.NewPresignClient(publicClient)
+
+	return &Storage{
+		client,
+		presigner,
+	}, nil
+}
+
+func (s *Storage) Client() *s3.Client {
+	return s.s3
+}
+
+func (s *Storage) Presigner() *s3.PresignClient {
+	return s.presignS3
 }

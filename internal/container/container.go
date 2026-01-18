@@ -16,20 +16,16 @@ import (
 	"github.com/InstaySystem/is_v2-be/internal/infrastructure/persistence/orm"
 	"github.com/InstaySystem/is_v2-be/internal/infrastructure/provider/rabbitmq"
 	"github.com/InstaySystem/is_v2-be/internal/infrastructure/provider/smtp"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/redis/go-redis/v9"
-	"github.com/sony/sonyflake/v2"
-	"go.uber.org/zap"
 )
 
 type Container struct {
 	cfg               *config.Config
-	Log               *zap.Logger
+	Log               *initialization.Log
 	DB                *initialization.Database
-	cache             *redis.Client
-	mq                *initialization.MQ
-	stor              *s3.Client
-	IDGen             *sonyflake.Sonyflake
+	cache             *initialization.Cache
+	mq                *initialization.MessageQueue
+	stor              *initialization.Storage
+	IDGen             *initialization.IDGen
 	jwtPro            port.JWTProvider
 	MQPro             port.MessageQueueProvider
 	cachePro          port.CacheProvider
@@ -79,7 +75,7 @@ func (c *Container) InitSeed() (err error) {
 		}
 	}()
 
-	c.Log, err = initialization.InitZap(c.cfg.Log)
+	c.Log, err = initialization.InitLog(c.cfg.Log)
 	if err != nil {
 		return err
 	}
@@ -89,12 +85,12 @@ func (c *Container) InitSeed() (err error) {
 		return err
 	}
 
-	c.IDGen, err = initialization.InitSnowFlake()
+	c.IDGen, err = initialization.InitIDGen()
 	if err != nil {
 		return err
 	}
 
-	c.UserRepo = orm.NewUserRepository(c.DB.Gorm)
+	c.UserRepo = orm.NewUserRepository(c.DB.ORM())
 
 	return nil
 }
@@ -106,17 +102,17 @@ func (c *Container) InitConsumer() (err error) {
 		}
 	}()
 
-	c.Log, err = initialization.InitZap(c.cfg.Log)
+	c.Log, err = initialization.InitLog(c.cfg.Log)
 	if err != nil {
 		return err
 	}
 
-	c.mq, err = initialization.InitRabbitMQ(c.cfg.RabbitMQ)
+	c.mq, err = initialization.InitMessageQueue(c.cfg.RabbitMQ)
 	if err != nil {
 		return err
 	}
 
-	c.MQPro = rabbitmq.NewMessageQueueProvider(c.mq.Conn, c.mq.Chan, c.Log)
+	c.MQPro = rabbitmq.NewMessageQueueProvider(c.mq.Connection(), c.Log.Logger())
 	c.SMTPPro = smtp.NewSMTPProvider(c.cfg.SMTPConfig)
 
 	return nil
@@ -129,7 +125,7 @@ func (c *Container) InitScheduler() (err error) {
 		}
 	}()
 
-	c.Log, err = initialization.InitZap(c.cfg.Log)
+	c.Log, err = initialization.InitLog(c.cfg.Log)
 	if err != nil {
 		return err
 	}
@@ -139,7 +135,7 @@ func (c *Container) InitScheduler() (err error) {
 		return err
 	}
 
-	c.TokenRepo = orm.NewTokenRepository(c.DB.Gorm)
+	c.TokenRepo = orm.NewTokenRepository(c.DB.ORM())
 
 	return nil
 }
@@ -150,6 +146,12 @@ func (c *Container) Cleanup() {
 	}
 	if c.mq != nil {
 		c.mq.Close()
+	}
+	if c.cache != nil {
+		c.cache.Close()
+	}
+	if c.Log != nil {
+		c.Log.Close()
 	}
 
 	log.Println("Container cleaned successfully")

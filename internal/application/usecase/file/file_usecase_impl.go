@@ -19,22 +19,22 @@ import (
 )
 
 type fileUseCaseImpl struct {
-	cfg     config.MinIOConfig
-	client  *s3.Client
-	pClient *s3.PresignClient
-	log     *zap.Logger
+	cfg       config.MinIOConfig
+	client    *s3.Client
+	presigner *s3.PresignClient
+	log       *zap.Logger
 }
 
 func NewFileUseCase(
 	cfg config.MinIOConfig,
-	stor *s3.Client,
+	client *s3.Client,
+	presigner *s3.PresignClient,
 	log *zap.Logger,
 ) FileUseCase {
-	pClient := s3.NewPresignClient(stor)
 	return &fileUseCaseImpl{
 		cfg,
-		stor,
-		pClient,
+		client,
+		presigner,
 		log,
 	}
 }
@@ -47,7 +47,7 @@ func (u *fileUseCaseImpl) CreateUploadURLs(ctx context.Context, req dto.UploadPr
 		ext := filepath.Ext(file.FileName)
 
 		key := fmt.Sprintf("%s-%s%s", uuid.NewString(), utils.GenerateSlug(name), ext)
-		presignedRes, err := u.pClient.PresignPutObject(ctx, &s3.PutObjectInput{
+		presignedRes, err := u.presigner.PresignPutObject(ctx, &s3.PutObjectInput{
 			Bucket:      aws.String(u.cfg.Bucket),
 			Key:         aws.String(key),
 			ContentType: aws.String(file.ContentType),
@@ -85,7 +85,7 @@ func (u *fileUseCaseImpl) CreateViewURLs(ctx context.Context, req dto.ViewPresig
 			return nil, err
 		}
 
-		presignedReq, err := u.pClient.PresignGetObject(ctx, &s3.GetObjectInput{
+		presignedReq, err := u.presigner.PresignGetObject(ctx, &s3.GetObjectInput{
 			Bucket: aws.String(u.cfg.Bucket),
 			Key:    aws.String(key),
 		}, func(opts *s3.PresignOptions) {

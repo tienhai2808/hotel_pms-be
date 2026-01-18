@@ -9,12 +9,12 @@ import (
 )
 
 func (c *Container) initLogic() {
-	c.UserRepo = orm.NewUserRepository(c.DB.Gorm)
-	c.TokenRepo = orm.NewTokenRepository(c.DB.Gorm)
-	c.departmentRepo = orm.NewDepartmentRepository(c.DB.Gorm)
+	c.UserRepo = orm.NewUserRepository(c.DB.ORM())
+	c.TokenRepo = orm.NewTokenRepository(c.DB.ORM())
+	c.departmentRepo = orm.NewDepartmentRepository(c.DB.ORM())
 
-	c.fileUC = fileUC.NewFileUseCase(c.cfg.MinIO, c.stor, c.Log)
-	c.authUC = authUC.NewAuthUseCase(c.cfg.JWT, c.DB.Gorm, c.Log, c.IDGen, c.jwtPro, c.cachePro, c.MQPro, c.UserRepo, c.TokenRepo)
-	c.userUC = userUC.NewUserUseCase(c.DB.Gorm, c.Log, c.IDGen, c.cachePro, c.UserRepo, c.departmentRepo, c.TokenRepo)
-	c.departmentUC = departmentUC.NewDepartmentUseCase(c.Log, c.IDGen, c.departmentRepo)
+	c.fileUC = fileUC.NewFileUseCase(c.cfg.MinIO, c.stor.Client(), c.stor.Presigner(), c.Log.Logger())
+	c.authUC = authUC.NewAuthUseCase(c.cfg.JWT, c.DB.ORM(), c.Log.Logger(), c.IDGen.Generator(), c.jwtPro, c.cachePro, c.MQPro, c.UserRepo, c.TokenRepo)
+	c.userUC = userUC.NewUserUseCase(c.DB.ORM(), c.Log.Logger(), c.IDGen.Generator(), c.cachePro, c.UserRepo, c.departmentRepo, c.TokenRepo)
+	c.departmentUC = departmentUC.NewDepartmentUseCase(c.Log.Logger(), c.IDGen.Generator(), c.departmentRepo)
 }

@@ -22,29 +22,29 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags="-w -s" \
     -trimpath \
-    -o healthcheck ./cmd/healthcheck/main.go
+    -o healthcheck ./cmd/healthcheck
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags="-w -s" \
     -trimpath \
-    -o consumer ./cmd/consumer/main.go
+    -o consumer ./cmd/consumer
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags="-w -s" \
     -trimpath \
-    -o seeder ./cmd/seeder/main.go
+    -o seeder ./cmd/seeder
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags="-w -s" \
     -trimpath \
-    -o scheduler ./cmd/scheduler/main.go
+    -o scheduler ./cmd/scheduler
 
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags="-w -s -X main.Version=${VERSION} -X main.CommitSHA=${COMMIT_SHA} -X main.BuildDate=${BUILD_DATE}" \
     -trimpath \
-    -o server ./cmd/server/main.go
+    -o server ./cmd/server
 
 FROM gcr.io/distroless/static-debian12:nonroot AS production
 

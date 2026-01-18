@@ -52,6 +52,7 @@ func LoadConfig() (*Config, error) {
 	viper.BindEnv("minio.region", "MIN_REGION")
 	viper.BindEnv("minio.public_read", "MIN_PUBLIC_READ")
 	viper.BindEnv("minio.use_ssl", "MIN_USE_SSL")
+	viper.BindEnv("minio.public_domain", "MIN_PUBLIC_DOMAIN")
 
 	viper.BindEnv("super_user.password", "SU_PASSWORD")
 	viper.BindEnv("super_user.username", "SU_USERNAME")

@@ -23,7 +23,7 @@ func main() {
 	}
 	defer ctn.Cleanup()
 
-	csm := consumer.NewConsumer(ctn.Log, ctn.MQPro, ctn.SMTPPro)
+	csm := consumer.NewConsumer(ctn.Log.Logger(), ctn.MQPro, ctn.SMTPPro)
 	csm.Start()
 
 	log.Println("Consumer is running")
